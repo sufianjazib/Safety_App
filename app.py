@@ -70,8 +70,8 @@ if not groq_api_key:
 client = Groq(api_key=groq_api_key) if groq_api_key else None
 
 # Safe API Completion Helper with Model Fallbacks
-PRIMARY_MODEL = "llama-3.3-70b-versatile"
-FALLBACK_MODEL = "llama-3.1-8b-instant"
+PRIMARY_MODEL = "openai/gpt-oss-120b"
+FALLBACK_MODEL = "openai/gpt-oss-120b"
 
 
 def call_groq_json(client_obj, prompt, temperature=0.2):
