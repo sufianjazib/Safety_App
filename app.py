@@ -276,7 +276,7 @@ with tabs[2]:
     st.info("No observations pending review.")
   else:
     for idx, obs in enumerate(pending):
-      with st.expandable(
+      with st.expander(
           f"{obs['id']} - {obs['hazard_type']} ({obs['location']})",
           expanded=True,
       ):
