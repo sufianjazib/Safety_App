@@ -70,13 +70,13 @@ if not groq_api_key:
 client = Groq(api_key=groq_api_key) if groq_api_key else None
 
 # Safe API Completion Helper with Model Fallbacks
-PRIMARY_MODEL = "openai/gpt-oss-120b"
-FALLBACK_MODEL = "openai/gpt-oss-120b"
+PRIMARY_MODEL = "llama-3.3-70b-versatile"
+FALLBACK_MODEL = "llama-3.1-8b-instant"
 
 
 def call_groq_json(client_obj, prompt, temperature=0.2):
-  """Calls Groq API safely with fallback models if a NotFoundError occurs."""
-  models_to_try = [PRIMARY_MODEL, FALLBACK_MODEL, "gemma2-9b-it"]
+  """Calls Groq API safely with fallback models if an error occurs."""
+  models_to_try = [PRIMARY_MODEL, FALLBACK_MODEL, "llama-3.1-8b-instruct"]
 
   for model_id in models_to_try:
     try:
@@ -89,14 +89,11 @@ def call_groq_json(client_obj, prompt, temperature=0.2):
       return json.loads(response.choices[0].message.content)
     except Exception as e:
       if "404" in str(e) or "NotFoundError" in type(e).__name__:
-        continue  # Try the next model
+        continue
       else:
         raise e
 
-  raise RuntimeError(
-      "All available Groq model endpoints failed. Please check your API key"
-      " and status at console.groq.com"
-  )
+  raise RuntimeError("All available Groq model endpoints failed.")
 
 
 # Helper AI Agent Functions
@@ -395,9 +392,14 @@ with tabs[3]:
             except Exception as e:
               st.error(f"Error evaluating assessment: {str(e)}")
 
-# TAB 5: CERTIFICATE ISSUANCE
+# TAB 5: CERTIFICATE ISSUANCE (Updated Module)
 with tabs[4]:
-  st.subheader("Professional Practice Certification")
+  st.subheader("Professional Practice Certification & Digital Passport")
+  st.write(
+      "Verified digital safety certificates issued upon successful practical"
+      " assessment completion."
+  )
+
   completed = [
       obs
       for obs in st.session_state.observations
@@ -407,21 +409,36 @@ with tabs[4]:
   if not completed:
     st.info(
         "No completed training assessments eligible for certificate issuance"
-        " yet."
+        " yet. Complete an assessment in Tab 4 to generate your certificate."
     )
   else:
-    for c in completed:
-      st.markdown(
-          f"""
-            <div class="card" style="text-align: center; border: 2px solid #1E3A8A;">
-                <h2 style="color: #1E3A8A; margin-bottom: 0;">Shamareekh Educational Platform</h2>
-                <p style="color: #64748B;">Occupational Safety Professional Practice Certificate</p>
-                <hr>
-                <p>This certifies that the worker assigned to <b>{c['assigned_role']}</b> has successfully completed site-specific practical hazard training for:</p>
-                <h3>{c['hazard_type']}</h3>
-                <p>Verification Score: <b>{c['assessment_score']}%</b> | Date: {c['date']}</p>
-                <p style="font-size: 11px; color: #94A3B8;">Certificate ID: CERT-{c['id']} | Shamareekh Safety AI Verified</p>
+    cert_options = {f"{c['id']} - {c['hazard_type']}": c for c in completed}
+    selected_cert_key = st.selectbox(
+        "Select Certified Training Record", list(cert_options.keys())
+    )
+    c = cert_options[selected_cert_key]
+
+    st.markdown("---")
+
+    # Render Professional Certificate Card
+    st.markdown(
+        f"""
+        <div style="background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); padding: 40px; border-radius: 12px; border: 4px solid #1E3A8A; box-shadow: 0 4px 12px rgba(0,0,0,0.1); text-align: center; font-family: sans-serif;">
+            <h1 style="color: #1E3A8A; margin-bottom: 5px; font-size: 28px;">SHAMAREEKH EDUCATIONAL PLATFORM</h1>
+            <p style="color: #475569; font-size: 16px; font-weight: bold; letter-spacing: 1px; margin-top: 0;">OCCUPATIONAL SAFETY MODULE (SSCO.EDU.SA)</p>
+            <hr style="border: 1px solid #cbd5e1; width: 60%; margin: 20px auto;">
+            <p style="color: #334155; font-size: 15px;">This professional practice certificate is proudly presented to verify that the worker holding role:</p>
+            <h2 style="color: #0F172A; font-size: 24px; margin: 10px 0;">{c['assigned_role']}</h2>
+            <p style="color: #334155; font-size: 15px;">has successfully completed site-specific practical hazard training & comprehension assessment for:</p>
+            <h3 style="color: #1E3A8A; font-size: 22px; margin: 10px 0;">{c['hazard_type']}</h3>
+            <div style="display: flex; justify-content: center; gap: 40px; margin: 25px 0; color: #475569; font-size: 14px;">
+                <div><b>Verification Score:</b> <span style="color: #059669; font-size: 16px;">{c['assessment_score']}%</span></div>
+                <div><b>Completion Date:</b> {c['date']}</div>
+                <div><b>Location Zone:</b> {c['location']}</div>
             </div>
-            """,
-          unsafe_allow_html=True,
-      )
+            <hr style="border: 1px solid #cbd5e1; width: 60%; margin: 20px auto;">
+            <p style="font-size: 12px; color: #64748B; font-family: monospace;">Certificate ID: CERT-{c['id']} | Saudi Building Code & MHRSD Aligned | AI Verified</p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
